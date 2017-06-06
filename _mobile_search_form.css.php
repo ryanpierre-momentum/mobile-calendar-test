@@ -513,7 +513,13 @@
         z-index: 100000;
     }
 
-    #react-app .mobile-calendar-modal {
+    #react-app .calendar-modal {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #react-app .mobile-calendar {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -533,7 +539,22 @@
         border: 1px solid #ccc;
     }
 
+    #react-app .mobile-calendar-header {
+        display : flex;
+        justify-content: center;
+        width: 100vw;
+    }
+
     #react-app .mobile-calendar-cell.inactive {
+        opacity: 0.2;
+    }
+
+    #react-app .mobile-calendar-cell.selected {
+        background: #64A04D;
+    }
+
+    #react-app .mobile-calendar-cell.buffered {
+        background: #64A04D;
         opacity: 0.6;
     }
 
