@@ -139,7 +139,8 @@ if (Mv_Ota_Surfer_Helper::isMobile()) {
                             <?php if (Mv_Ota_Surfer_Helper::isMobile()) : ?>
                                 <div class="form-field-mobile-date">
                                     <i class="fa fa-calendar icon"></i>
-                                <span class="mobile-calendar-toggle-react"
+                                <span id="mobile-calendar-mc-0"
+                                      class="mobile-calendar-toggle-react"
                                       data-initial-text="<?= $mobileDateDefaultText ?>"
                                       data-initial-rt-text="<?= $mobileRoundTripDefaultText ?>"
                                       data-trigger-id="0">
@@ -153,7 +154,10 @@ if (Mv_Ota_Surfer_Helper::isMobile()) {
                                         <?= $mobileDateDefaultText ?>
                                     <?php endif; ?>
                                 </span>
-
+                                <input id="seg0_date_1" name="seg0_date" type="hidden"
+                                           value="<?= $search_params['seg0_date']; ?>">
+                                <input id="seg1_date_1" name="seg1_date" type="hidden"
+                                       value="<?= $search_params['seg1_date']; ?>" class="mobile-calendar-input-1">
                                 </div>
                             <?php else : ?>
                                 <div class="form-field-from-date">
@@ -223,27 +227,31 @@ if (Mv_Ota_Surfer_Helper::isMobile()) {
                                         <input type="hidden" name="seg<?php echo $i; ?>_to_code"
                                                value="<?php echo $toAirportCodeValue; ?>"/>
                                     </div>
-                                    <div class="form-field-from-date form-field-wrap">
+                                    
                                         <?php if (Mv_Ota_Surfer_Helper::isMobile()) : ?>
-                                            <i class="fa fa-calendar icon"></i>
-                                            <span id="mobile-calendar-mc-<?= $i ?>"
-                                                  class="date-field-from mobile-calendar-toggle mobile-calendar-multicity-toggle"
-                                                  data-trigger-id="<?= $i ?>"
-                                                  data-is-multicity="true">
-                                                <?php if ($search_params['seg' . $i . '_date']) : ?>
-                                                    <?= date($mobileDatesFormat, strtotime($search_params['seg' . $i . '_date'])); ?>
-                                                <?php else : ?>
-                                                    <?= $mobileDateDefaultText ?>
-                                                <?php endif; ?>
-                                            </span>
-                                            <input type="hidden" name="seg<?php echo $i; ?>_date"
-                                                   value="<?= $dateValue ?>" class="mobile-calendar-input-<?= $i ?>">
+                                            <div class="form-field-mobile-date">
+                                                <i class="fa fa-calendar icon"></i>
+                                                <span id="mobile-calendar-mc-<?= $i ?>"
+                                                      class="date-field-from mobile-calendar-toggle-react mobile-calendar-multicity-toggle-react"
+                                                      data-trigger-id="<?= $i ?>"
+                                                      data-is-multicity="true">
+                                                    <?php if ($search_params['seg' . $i . '_date']) : ?>
+                                                        <?= date($mobileDatesFormat, strtotime($search_params['seg' . $i . '_date'])); ?>
+                                                    <?php else : ?>
+                                                        <?= $mobileDateDefaultText ?>
+                                                    <?php endif; ?>
+                                                </span>
+                                                <input type="hidden" name="seg<?php echo $i; ?>_date"
+                                                       value="<?= $dateValue ?>" class="mobile-calendar-input-<?= $i ?>">
+                                            </div>
                                         <?php else : ?>
-                                            <input readonly="true" type="text" name="seg<?php echo $i; ?>_date"
-                                                   placeholder="Date" autocomplete="off" class="date-field-from"
-                                                   value="<?php echo $dateValue; ?>"/>
+                                            <div class="form-field-from-date form-field-wrap ">
+                                                <input readonly="true" type="text" name="seg<?php echo $i; ?>_date"
+                                                       placeholder="Date" autocomplete="off" class="date-field-from"
+                                                       value="<?php echo $dateValue; ?>"/>
+                                            </div>
                                         <?php endif; ?>
-                                    </div>
+                                    
                                     <div class="form-field-segment form-field-segment-action">
                                         <div class="inline-search-form-add-segment-container">
                                             <a href="" class="inline-search-form-add-segment">+ Add segment</a>

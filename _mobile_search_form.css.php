@@ -545,6 +545,14 @@
         width: 100vw;
     }
 
+    #react-app .calendar-reset-button, #react-app .calendar-close-button {
+        width: 100vw;
+        height: 40px;
+        background: #F0F0F0;
+        text-align: center;
+        cursor: pointer;
+    }
+
     #react-app .mobile-calendar-cell.inactive {
         opacity: 0.2;
     }

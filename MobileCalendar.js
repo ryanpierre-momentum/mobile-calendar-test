@@ -1,5 +1,4 @@
 function renderMobileCalendarCell(date, selectionCallback){
-
 	let style = "mobile-calendar-cell";
 	let handler = date.active ? (e) => {selectionCallback(date)} : (e) => {e.preventDefault()};
 
@@ -25,6 +24,7 @@ function renderMobileCalendarCell(date, selectionCallback){
 		style+= " weekend";
 	}
 
+	//Inactive days are currently just not shown, but this can be made into a toggle for how we want to display them later
 	return <div key={`${date.id}`} className={style} onClick={handler}> {date.active ? date.number : null} </div>;
 }
 
@@ -83,7 +83,7 @@ class MobileCalendar extends React.Component {
 	}
 
 	/**
-	 * Generates all the date cells in a given month in a given year
+	 * Generates all the date cells in a given month in a given year on init
 	 * @param {Number} Year 
 	 * @param {Number} Month (true month #, not 0-based! i.e. April = 4)
 	 * @param {Array} Existing segments we need to render
@@ -122,13 +122,13 @@ class MobileCalendar extends React.Component {
 			//Get the weekday number, 0 = Sunday, 1 = Monday, etc.
 			let weekdayNumber = i % 7;
 
-			//Create ghost cells before
+			//Create ghost cells before - id is formatted to be an ISO date for comparison
 			if(i < initMonthData.firstDay){
 
 				//Calculate what day it should be from the previous month to fill empty space at the beginning
 				currentDayNumber = prevMonthData.numDays - Math.abs(i - initMonthData.firstDay + 1);
 				currentCell = {
-					id: `${prevMonthData.yearNumber}-${prevMonthData.monthNumber}-${currentDayNumber}`,
+					id: `${prevMonthData.yearNumber}-${prevMonthData.monthNumber < 10 ? "0" : ""}${prevMonthData.monthNumber + 1}-${currentDayNumber < 10 ? "0" : ""}${currentDayNumber}`,
 					number: currentDayNumber, 
 					monthNumber: prevMonthData.monthNumber, 
 					yearNumber: prevMonthData.yearNumber,
@@ -139,13 +139,13 @@ class MobileCalendar extends React.Component {
 				};
 			}
 
-			//Create ghost cells after
+			//Create ghost cells after - id is formatted to be an ISO date for comparison
 			else if(i >= initMonthData.firstDay + initMonthData.numDays){
 
 				//Calculate what day it should be from the next month to fill empty space at the end
 				currentDayNumber = Math.abs(i - (initMonthData.firstDay + initMonthData.numDays) + 1);
 				currentCell = {
-					id: `${nextMonthData.yearNumber}-${nextMonthData.monthNumber}-${currentDayNumber}`,
+					id: `${nextMonthData.yearNumber}-${nextMonthData.monthNumber < 10 ? "0" : ""}${nextMonthData.monthNumber + 1}-${currentDayNumber < 10 ? "0" : ""}${currentDayNumber}`,
 					number: currentDayNumber, 
 					monthNumber: nextMonthData.monthNumber, 
 					yearNumber: nextMonthData.yearNumber,
@@ -156,10 +156,10 @@ class MobileCalendar extends React.Component {
 				};
 			}
 
-			//Create a cell for the current month of the calendar
+			//Create a cell for the current month of the calendar - id is formatted to be an ISO date for comparison
 			else {
 				currentCell = {
-					id: `${initMonthData.yearNumber}-${initMonthData.monthNumber}-${(i - initMonthData.firstDay) + 1}`,
+					id: `${initMonthData.yearNumber}-${initMonthData.monthNumber < 10 ? "0" : ""}${initMonthData.monthNumber + 1}-${((i - initMonthData.firstDay) + 1) < 10 ? "0" : ""}${(i - initMonthData.firstDay) + 1}`,
 					number: (i - initMonthData.firstDay) + 1,
 					monthNumber: initMonthData.monthNumber, 
 					yearNumber: initMonthData.yearNumber,
@@ -174,16 +174,6 @@ class MobileCalendar extends React.Component {
 			dates.push(currentCell);
 		}
 
-		//Apply selected dates that already exist and create the colored squares between segment dates
-		if(existingSegments.length > 0){
-
-			dates = dates.map((date) => {
-
-				console.log(date);
-
-			})
-		}
-
 		//Push the new calendar data to state to propagate changes to DOM
 		this.setState({
 			currentMonthName: initMonthName,
@@ -191,8 +181,125 @@ class MobileCalendar extends React.Component {
 			currentMonthNumber: initMonthData.monthNumber,
 			currentYearNumber: parseInt(initYearName),
 			visibleDates: dates
+		}, () => {
+
+			//Apply selected dates that already exist and create the colored squares between segment dates
+			if(existingSegments.length > 0){
+				this.updateSegmentDisplay(existingSegments);
+			}
+
 		});
 	}
+
+	/**
+	 * Applies the buffered state (i.e. highlighted) to anything between selected segment dates
+	 * @param {Array} All of the segments that have been selected so far 
+	 * @param {Array} Segment dates that are located on this particular calendar
+	 * @param {Array} The old state of all the dates stored in this calendar
+	 * @return {Array} The new state of the dates stored in this calendar
+	 */
+	highlightDatesBetweenSegments(segments, segmentsInThisMonth, visibleDates){
+
+		let newVisibleDates = visibleDates;
+
+		//Determine if any buffers need to be drawn to connect items in this month to previous months
+		for(let i = 0; i < segmentsInThisMonth.length; i++){
+
+			//Create a date we can use to compare from the segments in this month
+			let currentDate = moment(`${segmentsInThisMonth[i].id}`);
+
+			for(let j = 0; j < segments.length; j++){
+
+				//Create a date we can compare to from all the segments to figure out where it is in relation to our date
+				let compareDate = moment(`${segments[j].id}`);
+				
+				//If the date located in this month is before the segment, and the segment # is higher 
+				if(currentDate.isBefore(compareDate) && i <= j){
+
+					//Everything between these two dates in this month needs to be buffered
+					newVisibleDates = newVisibleDates.map((date) => {
+
+						let dateInQuestion = moment(date.id);
+
+						//If it's within range, buffer it
+						if(dateInQuestion.isBefore(compareDate) && dateInQuestion.isAfter(currentDate) && date.active === true){
+							date.buffered = true;
+						}
+
+						else{
+							date.buffered = false;
+						}
+
+						return date;
+					});
+				}
+
+				//If the date located in this month is after the segment, and the segment # is lower
+				if(currentDate.isAfter(compareDate) && i >= j){
+
+					//Everything between these two dates in this month needs to be buffered
+					newVisibleDates = newVisibleDates.map((date) => {
+
+						let dateInQuestion = moment(date.id);
+
+						//If it's within range, buffer it
+						if(dateInQuestion.isAfter(compareDate) && dateInQuestion.isBefore(currentDate) && date.active === true){
+							date.buffered = true;
+						}
+
+						else{
+							date.buffered = false;
+						}
+
+						return date;
+					});
+				}
+			}
+		}
+
+		return newVisibleDates;
+	}
+
+	/**
+	 * Determine how segments should appear on this calendar after an update to dates
+	 * @param {Array} All of the segments that have been selected so far 
+	 * @return {null} Set the state of this calendar with the new data
+	 */
+	updateSegmentDisplay(segments){
+		let { currentMonthNumber, currentYearNumber, visibleDates } = this.state;
+
+		let newVisibleDates = visibleDates;
+
+		//Get all the segments that fall into this month
+		let segmentsInThisMonth = segments.filter((segment, idx) => {
+			return segment.monthNumber === currentMonthNumber && segment.yearNumber === currentYearNumber;
+		});
+
+		//Highlight anything between segments that falls on this particular calendar
+		newVisibleDates = this.highlightDatesBetweenSegments(segments, segmentsInThisMonth, newVisibleDates);
+
+		//Check if the date needs to be reselected and removed from selection
+		newVisibleDates = newVisibleDates.map((date) => {
+
+			let dateInQuestion = moment(date.id);
+
+			for(let k = 0; k < segmentsInThisMonth.length; k++){
+
+				//If it's one of the selected date, unbuffer it and select it
+				if(dateInQuestion.isSame(moment(segmentsInThisMonth[k].id))){
+					date.buffered = false;
+					date.selected = true;
+				}
+			}
+
+			return date;
+		});
+		
+		//Set state and update UI
+		this.setState({
+			visibleDates: newVisibleDates
+		});
+	}	
 
 	/**
 	 * Determine whether or not we need to update state when new props received
@@ -207,15 +314,9 @@ class MobileCalendar extends React.Component {
 			return true;
 		}
 
-		//If they are the same length and not zero length
-		else if(newSegments.length > 0) {
-
-			//We don't need to update if these two values are equal
-			return !_.isEqual(oldSegments, newSegments);
-		}
-
-		//Don't need an update otherwise
-		return false;
+		//We don't need to update if these two values are equal
+		return !_.isEqual(oldSegments, newSegments);
+		
 	}
 
 	componentDidMount() {
@@ -227,8 +328,16 @@ class MobileCalendar extends React.Component {
 
 	}
 
-	componentWillReceiveProps(nextProps) {
+	componentDidUpdate(prevProps) {
 
+		let { year, month, segments } = this.props;
+
+		//Figure out if any dates have changed to update the ui
+		if(this.determineIfUpdateRequired(prevProps.segments, segments)){
+			//this.updateSegmentDisplay(this.props.segments);
+			this.getCalendarData(year, month, segments);
+
+		}
 	}
 
 	render() {
